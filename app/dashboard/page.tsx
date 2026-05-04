@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
@@ -217,10 +217,12 @@ function Widget({ widget, stats, loading }: { widget: any; stats: any; loading: 
 /* ── Page ─────────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user, isLoaded, isSignedIn } = useUser();
   const { data: projects, isLoading: projectsLoading, isFetching: projectsFetching, refetch: refetchProjects } = useProjects();
-  const [activeSlug, setActiveSlug] = useState("");
+  const urlSlug = searchParams.get("slug");
+  const [activeSlug, setActiveSlug] = useState(urlSlug || "");
   const [syncing, setSyncing] = useState(false);
 
   // isLoaded = true means Clerk has finished checking auth state
@@ -249,7 +251,8 @@ export default function DashboardPage() {
     if (!projects?.length) return;
 
     if (!activeSlug) {
-      setActiveSlug(projects[0].slug);
+      const defaultSlug = urlSlug || projects[0].slug;
+      setActiveSlug(defaultSlug);
     } else {
       // Role enforcement check:
       // If a specific activeSlug is set, check if the user is an admin for this project.
@@ -263,8 +266,8 @@ export default function DashboardPage() {
     }
 
     const first = projects[0];
-    if (first?.slug && !activeSlug) setActiveSlug(first.slug);
-  }, [projects, projectsFetching, projectsLoading, activeSlug, router, user?.id]);
+    if (first?.slug && !activeSlug) setActiveSlug(urlSlug || first.slug);
+  }, [projects, projectsFetching, projectsLoading, activeSlug, router, user?.id, urlSlug]);
 
   const { data: config, isLoading: configLoading } = useDashboardConfig(activeSlug);
   const { data: instances, isLoading: instLoading } = useProductInstances(activeSlug);
@@ -340,27 +343,6 @@ export default function DashboardPage() {
               </span>
             </p>
           </div>
-
-          {/* Project switcher tabs */}
-          {projects && projects.length > 0 && (
-            <div style={{
-              display: "flex", gap: 6, padding: 4,
-              background: "var(--bg-card)", border: "1px solid var(--border)",
-              borderRadius: 12,
-            }}>
-              {projects.map((p: any) => (
-                <button key={p.slug} onClick={() => setActiveSlug(p.slug)}
-                  style={{
-                    padding: "7px 18px", borderRadius: 9, fontSize: 13, fontWeight: 600,
-                    cursor: "pointer", border: "none", transition: "all 0.18s",
-                    background: activeSlug === p.slug ? "var(--grad)" : "transparent",
-                    color: activeSlug === p.slug ? "#fff" : "var(--text-2)",
-                  }}>
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ── KPI cards row ── */}

@@ -14,10 +14,15 @@ export default function Header() {
     p.members?.some((m: any) => m.userId === user?.id && m.role === "admin")
   );
 
+  let currentSlug = "";
+  if (pathname.startsWith("/projects/")) {
+    currentSlug = pathname.split("/")[2];
+  }
+
   const navItems = [];
   
   if (isAdmin) {
-    navItems.push({ href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={14} /> });
+    navItems.push({ href: currentSlug ? `/dashboard?slug=${currentSlug}` : "/dashboard", label: "Dashboard", icon: <LayoutDashboard size={14} /> });
   }
 
   return (
