@@ -1,26 +1,214 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import "tailwindcss";
 
+/* ─── Design Tokens ─────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-base:    #060b17;
+  --bg-surface: #0d1424;
+  --bg-card:    #111827;
+  --bg-card-2:  #1a2235;
+  --bg-hover:   #1e2a3d;
+  --border:     rgba(255, 255, 255, 0.09);
+  --border-hi:  rgba(255, 255, 255, 0.16);
+  --text-1:     #f1f5f9;
+  --text-2:     #94a3b8;
+  --text-3:     #4b5670;
+  --blue:       #3b82f6;
+  --blue-dim:   rgba(59, 130, 246, 0.15);
+  --blue-ring:  rgba(59, 130, 246, 0.35);
+  --violet:     #8b5cf6;
+  --cyan:       #06b6d4;
+  --green:      #22c55e;
+  --red:        #ef4444;
+  --amber:      #f59e0b;
+  --grad:       linear-gradient(135deg, #3b82f6 0%, #8b5cf6 60%, #06b6d4 100%);
+  --grad-card:  linear-gradient(145deg, rgba(59,130,246,0.07), rgba(139,92,246,0.04));
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.5);
+  --shadow-lg:  0 8px 40px rgba(0,0,0,0.6);
+  --r:          12px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ─── Reset / Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-base);
+  color: var(--text-1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: var(--bg-base); }
+::-webkit-scrollbar-thumb    { background: var(--text-3); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
+
+/* ─── Cursor helpers ────────────────────────────────────────────────────── */
+button, [role="button"], a, label[for], select { cursor: pointer; }
+
+/* ─── Typography ────────────────────────────────────────────────────────── */
+.gradient-text {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Animations ────────────────────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spinner {
+  width: 20px; height: 20px;
+  border: 2.5px solid var(--border-hi);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.35s ease both; }
+
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-2) 50%, var(--bg-card) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: 6px;
+}
+
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-5px); opacity: 1; }
+}
+.typing-dot { animation: typingBounce 1.2s ease infinite; display: inline-block; }
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 1; }
+  100% { transform: scale(2); opacity: 0; }
+}
+.pulse-live::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse-ring 1.8s ease infinite;
+}
+
+/* ─── Cards ─────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+.card:hover {
+  border-color: var(--border-hi);
+  box-shadow: var(--shadow-md);
+}
+.card-lift:hover { transform: translateY(-2px); }
+
+/* ─── Glass ──────────────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(13, 20, 36, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; font-family: inherit; font-weight: 600;
+  border: none; border-radius: 10px;
+  padding: 10px 20px; font-size: 14px;
+  cursor: pointer; transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-primary { background: var(--grad); color: #fff; }
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(59,130,246,0.45); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); box-shadow: none; }
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-ghost {
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { background: var(--bg-hover); border-color: var(--border-hi); color: var(--text-1); }
+
+/* ─── Toggle Switch ──────────────────────────────────────────────────────── */
+.toggle-root {
+  position: relative; display: inline-flex;
+  width: 44px; height: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+.toggle-root.on  { background: var(--blue); }
+.toggle-root.off { background: #2a3347; border: 1px solid var(--border-hi); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  transition: transform 0.2s ease;
+}
+.toggle-root.on .toggle-thumb { transform: translateX(20px); }
+
+/* ─── Input ──────────────────────────────────────────────────────────────── */
+.input {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-hi);
+  border-radius: 9px;
+  color: var(--text-1); font-family: inherit; font-size: 14px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-ring);
+}
+.input::placeholder { color: var(--text-3); }
+
+/* ─── Badges ─────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.badge-blue   { background: var(--blue-dim);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+.badge-green  { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+.badge-violet { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); }
+.badge-amber  { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+
+/* ─── Dividers ───────────────────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); }
+
+/* ─── Recharts Tooltip ───────────────────────────────────────────────────── */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--bg-card-2) !important;
+  border: 1px solid var(--border-hi) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--shadow-md) !important;
+  color: var(--text-1) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 12px !important;
 }
