@@ -23,11 +23,13 @@ export async function GET(
 ) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { slug } = await params;
-    const conversations = await getConversations(userId, slug);
+    const url = new URL(req.url);
+    const piId = url.searchParams.get("piId") || undefined;
+    const conversations = await getConversations(userId, slug, piId);
     return NextResponse.json(conversations);
   } catch (error) {
     return handleApiError(error);
@@ -40,7 +42,7 @@ export async function POST(
 ) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { slug } = await params;
@@ -61,7 +63,7 @@ export async function PATCH(
 ) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { slug } = await params;

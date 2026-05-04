@@ -1,10 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/utils/apiClient";
 
-export function useConversations(slug: string) {
+export function useConversations(slug: string, piId?: string) {
   return useQuery({
-    queryKey: ["conversations", slug],
-    queryFn: () => fetchApi(`/api/projects/${slug}/conversations`),
+    queryKey: ["conversations", slug, piId],
+    queryFn: () => {
+      const url = piId 
+        ? `/api/projects/${slug}/conversations?piId=${piId}`
+        : `/api/projects/${slug}/conversations`;
+      return fetchApi(url);
+    },
     enabled: !!slug
   });
 }

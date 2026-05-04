@@ -45,7 +45,8 @@ export async function requireAccess(userId: string, projectSlug: string, role?: 
 
 export async function getUserProjects(userId: string) {
   const user = await getUserByIdInternal(userId);
-  if (!user) throw new Error("User not found");
+  // User may not exist yet if sync hasn't completed — return empty instead of throwing
+  if (!user) return [];
   
   const projectPromises = user.projects.map((p: any) => getProjectByIdInternal(p.projectId));
   const projects = await Promise.all(projectPromises);

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,9 +11,9 @@ import {
   RefreshCw, TrendingUp, ChevronRight, Database,
 } from "lucide-react";
 import { useDashboardConfig } from "@/hooks/useDashboardConfig";
-import { useProjects, useProductInstances, useUpdateIntegrations } from "@/hooks/useProjects";
+import { useProjects, useProductInstances, useUpdateIntegrations, useCreateProductInstance } from "@/hooks/useProjects";
 import { useProjectStats } from "@/hooks/useProjectStats";
-import { useCurrentUser } from "@/hooks/useAuth";
+import { useUser } from "@clerk/nextjs";
 import Header from "@/components/ui/Header";
 
 /* ── helpers ──────────────────────────────────────────────────────────────── */
@@ -27,12 +28,12 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: "#1a2235", border: "1px solid rgba(255,255,255,0.14)",
-      borderRadius: 8, padding: "8px 14px", boxShadow: "0 8px 30px rgba(0,0,0,0.5)",
-      fontSize: 12, color: "#f1f5f9",
+      background: "#fff", border: "1px solid rgba(0,0,0,0.12)",
+      borderRadius: 8, padding: "8px 14px", boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+      fontSize: 12, color: "#1A1A1A",
     }}>
-      <p style={{ color: "#94a3b8", marginBottom: 4 }}>{label}</p>
-      <p style={{ fontWeight: 700, color: "#93c5fd" }}>{payload[0].value} responses</p>
+      <p style={{ color: "#A39E97", marginBottom: 4 }}>{label}</p>
+      <p style={{ fontWeight: 700, color: "#C17F59" }}>{payload[0].value} messages</p>
     </div>
   );
 }
@@ -79,10 +80,7 @@ function StatCard({
 }
 
 /* ── Widget (config-driven) ───────────────────────────────────────────────── */
-const WEEK = [
-  { day: "Mon", v: 3 }, { day: "Tue", v: 5 }, { day: "Wed", v: 2 },
-  { day: "Thu", v: 8 }, { day: "Fri", v: 6 }, { day: "Sat", v: 1 }, { day: "Sun", v: 4 },
-];
+// No hardcoded WEEK data — chart uses real stats.weekly_activity from MongoDB
 
 function Widget({ widget, stats, loading }: { widget: any; stats: any; loading: boolean }) {
   const val = stats?.[widget.valueKey];
@@ -111,27 +109,41 @@ function Widget({ widget, stats, loading }: { widget: any; stats: any; loading: 
 
       ) : widget.type === "chart" ? (
         <div style={{ height: 110, marginTop: 4 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={WEEK} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#4b5670" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#4b5670" }} axisLine={false} tickLine={false} />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(59,130,246,0.07)", radius: 4 }} />
-              <Bar dataKey="v" radius={[5, 5, 0, 0]}>
-                {WEEK.map((_, i) => (
-                  <Cell key={i} fill={`url(#barGrad-${i % 2})`} />
-                ))}
-              </Bar>
-              <defs>
-                <linearGradient id="barGrad-0" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#6366f1" />
-                </linearGradient>
-                <linearGradient id="barGrad-1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-              </defs>
-            </BarChart>
-          </ResponsiveContainer>
+          {loading ? (
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: "100%", paddingTop: 16 }}>
+              {[60, 80, 45, 100, 70, 30, 55].map((h, i) => (
+                <div key={i} className="skeleton" style={{ flex: 1, height: `${h}%`, borderRadius: "4px 4px 0 0" }} />
+              ))}
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={(stats?.weekly_activity ?? []).length > 0 ? stats.weekly_activity : [
+                  { day: "Mon", v: 0 }, { day: "Tue", v: 0 }, { day: "Wed", v: 0 },
+                  { day: "Thu", v: 0 }, { day: "Fri", v: 0 }, { day: "Sat", v: 0 }, { day: "Sun", v: 0 },
+                ]}
+                margin={{ top: 0, right: 0, left: -28, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#4b5670" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#4b5670" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(139,92,246,0.07)", radius: 4 }} />
+                <Bar dataKey="v" radius={[5, 5, 0, 0]}>
+                  {(stats?.weekly_activity ?? Array(7).fill({})).map((_: any, i: number) => (
+                    <Cell key={i} fill={`url(#barGrad-${i % 2})`} />
+                  ))}
+                </Bar>
+                <defs>
+                  <linearGradient id="barGrad-0" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#6366f1" />
+                  </linearGradient>
+                  <linearGradient id="barGrad-1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#06b6d4" /><stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                </defs>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
       ) : widget.type === "list" ? (
@@ -205,22 +217,60 @@ function Widget({ widget, stats, loading }: { widget: any; stats: any; loading: 
 /* ── Page ─────────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const router = useRouter();
-  const { data: user, isLoading: userLoading } = useCurrentUser();
-  const { data: projects, isLoading: projectsLoading } = useProjects();
+  const queryClient = useQueryClient();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { data: projects, isLoading: projectsLoading, isFetching: projectsFetching, refetch: refetchProjects } = useProjects();
   const [activeSlug, setActiveSlug] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  // isLoaded = true means Clerk has finished checking auth state
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) router.push("/login");
+  }, [isSignedIn, isLoaded, router]);
 
   useEffect(() => {
-    if (!userLoading && !user) router.push("/login");
-  }, [user, userLoading, router]);
+    if (!isSignedIn) return;
+    // Sync Clerk user with MongoDB. After sync, invalidate projects to pick up the newly created workspace.
+    setSyncing(true);
+    fetch("/api/auth/sync", { method: "POST" })
+      .then(() => refetchProjects())
+      .catch(() => {})
+      .finally(() => setSyncing(false));
+  // Only run once when user first signs in
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSignedIn]);
 
   useEffect(() => {
-    if (projects?.[0]?.slug && !activeSlug) setActiveSlug(projects[0].slug);
-  }, [projects, activeSlug]);
+    // CRITICAL: Never redirect while a background refetch is happening.
+    // projectsFetching = true means TanStack is currently fetching fresh data.
+    // If we redirect on stale data and fresh data would say setupComplete:true,
+    // we'd create a false redirect loop.
+    if (projectsFetching || projectsLoading) return;
+    if (!projects?.length) return;
+
+    if (!activeSlug) {
+      setActiveSlug(projects[0].slug);
+    } else {
+      // Role enforcement check:
+      // If a specific activeSlug is set, check if the user is an admin for this project.
+      const currentProject = projects.find((p: any) => p.slug === activeSlug);
+      if (currentProject) {
+        const isAdmin = currentProject.members?.some((m: any) => m.userId === user?.id && m.role === "admin");
+        if (!isAdmin) {
+          router.replace(`/projects/${activeSlug}/chat`);
+        }
+      }
+    }
+
+    const first = projects[0];
+    if (first?.slug && !activeSlug) setActiveSlug(first.slug);
+  }, [projects, projectsFetching, projectsLoading, activeSlug, router, user?.id]);
 
   const { data: config, isLoading: configLoading } = useDashboardConfig(activeSlug);
   const { data: instances, isLoading: instLoading } = useProductInstances(activeSlug);
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useProjectStats(activeSlug);
   const updateIntegrations = useUpdateIntegrations(activeSlug);
+  const createProduct = useCreateProductInstance(activeSlug);
 
   const handleToggle = (piId: string, current: any, type: "shopify" | "crm") => {
     updateIntegrations.mutate({
@@ -233,12 +283,37 @@ export default function DashboardPage() {
   };
 
   /* ── loading / auth guard ── */
-  if (userLoading || projectsLoading) {
+  if (!isLoaded || projectsLoading || syncing) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-base)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: "#FAFAF8", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 0 }}>
         <div style={{ textAlign: "center" }}>
-          <div className="spinner" style={{ margin: "0 auto 12px" }} />
-          <p style={{ fontSize: 13, color: "var(--text-3)" }}>Loading workspace…</p>
+          {/* Warm branded logo */}
+          <div style={{
+            width: 52, height: 52, borderRadius: 14,
+            background: "linear-gradient(135deg, #C17F59, #8B7355)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 24px",
+            boxShadow: "0 8px 32px rgba(193,127,89,0.25)",
+          }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/>
+              <path d="M12 8v4l3 3"/>
+            </svg>
+          </div>
+          {/* Animated dots */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 16 }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#C17F59",
+                animation: "typingBounce 1.2s ease infinite",
+                animationDelay: `${i * 0.15}s`,
+              }} />
+            ))}
+          </div>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#6B6560" }}>
+            {syncing ? "Syncing your workspace…" : "Loading…"}
+          </p>
         </div>
       </div>
     );
@@ -251,7 +326,7 @@ export default function DashboardPage() {
     <div style={{ minHeight: "100vh", background: "var(--bg-base)" }}>
       <Header />
 
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px 64px" }}>
+      <main data-testid="admin-dashboard-main" style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px 64px" }}>
 
         {/* ── Page header ── */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 32 }}>
@@ -303,9 +378,26 @@ export default function DashboardPage() {
               <ShieldCheck size={18} color="var(--blue)" />
               <p style={{ fontSize: 15, fontWeight: 700 }}>Product Integrations</p>
             </div>
-            <span className="badge badge-blue" style={{ fontSize: 11 }}>
-              Live — changes affect AI chat responses instantly
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span className="badge badge-blue" style={{ fontSize: 11 }}>
+                Live — changes affect AI chat responses instantly
+              </span>
+              <button 
+                onClick={() => {
+                  const name = window.prompt("Enter new product name:");
+                  if (name && name.trim()) {
+                    createProduct.mutate({ name: name.trim() });
+                  }
+                }}
+                disabled={createProduct.isPending}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: "var(--grad)", color: "#fff", border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6
+                }}>
+                {createProduct.isPending ? "Creating..." : "+ Add Product"}
+              </button>
+            </div>
           </div>
 
           {instLoading ? (
@@ -338,7 +430,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* right: toggles */}
+                  {/* right: toggles + chat link */}
                   <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
                     {(["shopify", "crm"] as const).map(type => {
                       const enabled = !!pi.integrations?.[type]?.enabled;
@@ -349,12 +441,21 @@ export default function DashboardPage() {
                           <span style={{ fontSize: 13, fontWeight: 500, color: enabled ? "var(--text-1)" : "var(--text-3)", textTransform: "capitalize", userSelect: "none" }}>
                             {type}
                           </span>
-                          {enabled && (
-                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
-                          )}
                         </div>
                       );
                     })}
+                    <div style={{ width: 1, height: 24, background: "var(--border)", margin: "0 4px" }} />
+
+                    <Link href={`/projects/${activeSlug}/chat?product=${pi._id}`}
+                      style={{
+                        padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                        background: "var(--bg-hover)", color: "var(--text-1)",
+                        textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
+                        border: "1px solid var(--border)"
+                      }}>
+                      <MessageSquare size={14} color="var(--blue)" />
+                      Chat
+                    </Link>
                   </div>
                 </div>
               ))}

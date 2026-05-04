@@ -1,8 +1,10 @@
 "use client";
 import { use, useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Zap } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Send, Bot, User, Sparkles, Zap, Layers } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { useSendMessage } from "@/hooks/useSendMessage";
+import IntegrationBadges from "@/components/chat/IntegrationBadges";
 
 /* ─── Typing indicator (AI is thinking) ──────────────────────────────────── */
 function AITyping() {
@@ -17,7 +19,7 @@ function AITyping() {
       {/* Avatar — identical to assistant bubble */}
       <div style={{
         width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-        background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.3)",
+        background: "rgba(193,127,89,0.12)", border: "1px solid rgba(193,127,89,0.25)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         <Bot size={16} color="var(--blue)" />
@@ -74,8 +76,8 @@ function Bubble({ msg }: { msg: any }) {
       {/* Avatar */}
       <div style={{
         width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
-        background: isUser ? "var(--grad)" : "rgba(59,130,246,0.15)",
-        border: isUser ? "none" : "1px solid rgba(59,130,246,0.3)",
+        background: isUser ? "var(--grad)" : "rgba(193,127,89,0.10)",
+        border: isUser ? "none" : "1px solid rgba(193,127,89,0.25)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
         {isUser ? <User size={15} color="#fff" /> : <Bot size={15} color="var(--blue)" />}
@@ -132,6 +134,9 @@ export default function ChatPage({
   params: Promise<{ slug: string; conversationId?: string[] }>;
 }) {
   const { slug, conversationId: convIdArr } = use(params);
+  const searchParams = useSearchParams();
+  const piId = searchParams.get("product") || undefined;
+  
   // Guard against "/chat/undefined" — treat missing/invalid ID as no conversation
   const rawId = convIdArr?.[0];
   const conversationId = rawId && rawId !== "undefined" && rawId.length > 10 ? rawId : undefined;
@@ -178,6 +183,30 @@ export default function ChatPage({
 
   /* ── No conversation selected ── */
   if (!conversationId) {
+    if (!piId) {
+      // Empty state: No product selected
+      return (
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          background: "var(--bg-base)", padding: "40px 24px", textAlign: "center",
+        }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 18, marginBottom: 20,
+            background: "rgba(193,127,89,0.10)", border: "1px solid rgba(193,127,89,0.22)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Layers size={30} color="var(--blue)" />
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Select a Product</h2>
+          <p style={{ fontSize: 14, color: "var(--text-2)", maxWidth: 340 }}>
+            Please select a product from the sidebar to view or start a chat.
+          </p>
+        </div>
+      );
+    }
+
+    // Empty state: Product selected, but no conversation yet
     return (
       <div style={{
         flex: 1, display: "flex", flexDirection: "column",
@@ -186,7 +215,7 @@ export default function ChatPage({
       }}>
         <div style={{
           width: 64, height: 64, borderRadius: 18, marginBottom: 20,
-          background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.25)",
+          background: "rgba(193,127,89,0.10)", border: "1px solid rgba(193,127,89,0.22)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <Bot size={30} color="var(--blue)" />
@@ -213,7 +242,7 @@ export default function ChatPage({
   }
 
   return (
-    <div style={{
+    <div data-testid="chat-messages-container" style={{
       flex: 1, display: "flex", flexDirection: "column",
       background: "var(--bg-base)", overflow: "hidden",
       height: "100%",
@@ -257,7 +286,7 @@ export default function ChatPage({
                     transition: "border-color 0.15s, background 0.15s",
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(59,130,246,0.4)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(193,127,89,0.4)";
                     (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
                   }}
                   onMouseLeave={e => {
@@ -284,6 +313,9 @@ export default function ChatPage({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* ── Integration status bar ── */}
+      {conversationId && <IntegrationBadges slug={slug} />}
+
       {/* ── Input bar ── */}
       <div style={{
         padding: "12px 24px 16px",
@@ -295,7 +327,7 @@ export default function ChatPage({
           display: "flex", alignItems: "center", gap: 10,
           maxWidth: 700, margin: "0 auto",
           background: "var(--bg-card)",
-          border: `1px solid ${input.trim() ? "rgba(59,130,246,0.5)" : "var(--border-hi)"}`,
+          border: `1px solid ${input.trim() ? "rgba(193,127,89,0.5)" : "var(--border-hi)"}`,
           borderRadius: 12, padding: "10px 10px 10px 16px",
           transition: "border-color 0.2s",
         }}>

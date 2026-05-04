@@ -7,7 +7,7 @@ import { connectToDatabase } from "@/lib/db/mongoose";
 export async function GET(req: Request) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const url = new URL(req.url);
@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const url = new URL(req.url);

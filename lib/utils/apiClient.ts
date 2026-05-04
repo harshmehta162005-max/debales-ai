@@ -5,6 +5,7 @@ export async function fetchApi(url: string, options: RequestInit = {}) {
   };
 
   const res = await fetch(url, {
+    cache: "no-store", // Prevents aggressive Next.js fetch caching
     ...options,
     headers,
     credentials: "include", // Send cookies automatically

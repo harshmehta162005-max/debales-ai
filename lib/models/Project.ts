@@ -7,6 +7,7 @@ const ProjectSchema = new Schema<IProject>(
   {
     slug: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
+    setupComplete: { type: Boolean, default: false },
     members: [
       {
         userId: { type: String, required: true },

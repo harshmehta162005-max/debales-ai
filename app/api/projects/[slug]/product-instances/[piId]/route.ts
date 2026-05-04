@@ -10,7 +10,7 @@ export async function PATCH(
 ) {
   try {
     await connectToDatabase();
-    const userId = getSessionUserId(req);
+    const userId = await getSessionUserId(req);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { slug, piId } = await params;

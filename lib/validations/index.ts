@@ -3,11 +3,13 @@ import { z } from "zod";
 export const ProjectSchema = z.object({
   slug: z.string(),
   name: z.string(),
+  setupComplete: z.boolean().default(false),
   members: z.array(z.object({
     userId: z.string(),
     role: z.enum(['admin', 'member'])
   }))
 });
+
 
 export const UserSchema = z.object({
   email: z.string().email(),

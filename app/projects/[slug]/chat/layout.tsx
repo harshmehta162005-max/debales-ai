@@ -1,11 +1,11 @@
 "use client";
-import { use, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { PlusCircle, MessageSquare, LayoutDashboard, Loader2, Bot } from "lucide-react";
+import { PlusCircle, MessageSquare, LayoutDashboard, Loader2, Bot, Layers, ChevronDown, ChevronUp } from "lucide-react";
 import { useConversations, useCreateConversation } from "@/hooks/useConversations";
 import { useProductInstances } from "@/hooks/useProjects";
-import { useCurrentUser } from "@/hooks/useAuth";
+import { useUser } from "@clerk/nextjs";
 import Header from "@/components/ui/Header";
 
 export default function ChatLayout({
@@ -18,18 +18,30 @@ export default function ChatLayout({
   const { slug } = use(params);
   const router = useRouter();
   const pathname = usePathname();
-  const { data: user, isLoading: userLoading } = useCurrentUser();
+  const searchParams = useSearchParams();
+  const piId = searchParams.get("product") || undefined;
+  const { user, isLoaded, isSignedIn } = useUser();
+  const [showAllProducts, setShowAllProducts] = useState(false);
 
+  // isLoaded = true means Clerk has finished checking auth state
   useEffect(() => {
-    if (!userLoading && !user) router.push("/login");
-  }, [user, userLoading, router]);
+    if (isLoaded && !isSignedIn) router.push("/login");
+  }, [isSignedIn, isLoaded, router]);
 
-  const { data: conversations, isLoading: convsLoading } = useConversations(slug);
+  const { data: conversations, isLoading: convsLoading } = useConversations(slug, piId);
   const { data: instances } = useProductInstances(slug);
   const createConv = useCreateConversation(slug);
 
+  // Find the selected product instance
+  let selectedProduct: any;
+  if (piId && instances) {
+    selectedProduct = instances.find((i: any) => i._id === piId || i.id === piId);
+  } else if (instances && instances.length > 0) {
+    selectedProduct = instances[0];
+  }
+
   const handleNew = async () => {
-    let pi = instances?.[0];
+    let pi = selectedProduct;
 
     // If instances not loaded yet, fetch directly
     if (!pi) {
@@ -47,16 +59,16 @@ export default function ChatLayout({
       return;
     }
 
-    const piId = pi._id ?? pi.id;
+    const actualPiId = pi._id ?? pi.id;
     createConv.mutate(
       {
-        productInstanceId: piId,
+        productInstanceId: actualPiId,
         title: `New Chat ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`,
       },
       {
         onSuccess: (data: any) => {
           const id = data._id ?? data.id;
-          if (id) router.push(`/projects/${slug}/chat/${id}`);
+          if (id) router.push(`/projects/${slug}/chat/${id}?product=${actualPiId}`);
         },
       }
     );
@@ -68,17 +80,17 @@ export default function ChatLayout({
 
       <div style={{ display: "flex", flex: 1, height: "calc(100vh - 58px)" }}>
         {/* ── Sidebar ── */}
-        <aside style={{
+        <aside data-testid="chat-sidebar" style={{
           width: 260, flexShrink: 0, display: "flex", flexDirection: "column",
           background: "var(--bg-surface)", borderRight: "1px solid var(--border)",
           overflowY: "auto",
         }}>
-          {/* Project label + new chat */}
+          {/* Project / Product label + new chat */}
           <div style={{ padding: "16px 14px 12px", borderBottom: "1px solid var(--border)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
               <Bot size={15} color="var(--blue)" />
-              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                {slug}
+              <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {selectedProduct ? selectedProduct.name : slug}
               </p>
             </div>
             <button
@@ -90,6 +102,57 @@ export default function ChatLayout({
                 ? <><div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Creating…</>
                 : <><PlusCircle size={14} /> New Chat</>}
             </button>
+          </div>
+
+          {/* Product Selector */}
+          <div style={{ padding: "12px 8px 4px", borderBottom: "1px solid var(--border)" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-3)", padding: "0 8px", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Products
+            </p>
+            {instances?.slice(0, showAllProducts ? undefined : 2).map((pi: any) => {
+              const active = piId === pi._id || piId === pi.id;
+              return (
+                <Link key={pi._id} href={`/projects/${slug}/chat?product=${pi._id}`}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    padding: "8px 12px", borderRadius: 8, marginBottom: 4,
+                    textDecoration: "none", transition: "all 0.15s",
+                    background: active ? "var(--bg-card)" : "transparent",
+                    color: active ? "var(--text-1)" : "var(--text-2)",
+                    border: `1px solid ${active ? "var(--border-hi)" : "transparent"}`,
+                    boxShadow: active ? "0 2px 4px rgba(0,0,0,0.02)" : "none",
+                    fontWeight: active ? 600 : 500,
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "var(--bg-hover)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }
+                  }}>
+                  <Layers size={14} color={active ? "var(--blue)" : "var(--text-3)"} />
+                  <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {pi.name}
+                  </span>
+                </Link>
+              );
+            })}
+            
+            {instances && instances.length > 2 && (
+              <button 
+                onClick={() => setShowAllProducts(!showAllProducts)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  padding: "6px 0", background: "transparent", border: "none",
+                  fontSize: 11, fontWeight: 600, color: "var(--text-3)", cursor: "pointer",
+                  marginTop: 2
+                }}>
+                {showAllProducts ? <><ChevronUp size={12} /> Show Less</> : <><ChevronDown size={12} /> Show All</>}
+              </button>
+            )}
           </div>
 
           {/* Conversations list */}
@@ -108,14 +171,14 @@ export default function ChatLayout({
               conversations.map((c: any) => {
                 const active = pathname.includes(c._id);
                 return (
-                  <Link key={c._id} href={`/projects/${slug}/chat/${c._id}`}
+                  <Link key={c._id} href={`/projects/${slug}/chat/${c._id}${piId ? `?product=${piId}` : ''}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 9,
                       padding: "9px 12px", borderRadius: 9, marginBottom: 2,
                       textDecoration: "none", transition: "all 0.15s",
-                      background: active ? "rgba(59,130,246,0.13)" : "transparent",
-                      color: active ? "#93c5fd" : "var(--text-2)",
-                      border: `1px solid ${active ? "rgba(59,130,246,0.3)" : "transparent"}`,
+                      background: active ? "rgba(193,127,89,0.12)" : "transparent",
+                      color: active ? "#8B4513" : "var(--text-2)",
+                      border: `1px solid ${active ? "rgba(193,127,89,0.3)" : "transparent"}`,
                       cursor: "pointer",
                     }}
                     onMouseEnter={e => {

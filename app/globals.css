@@ -1,50 +1,79 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 @import "tailwindcss";
 
-/* ─── Design Tokens ─────────────────────────────────────────────────────── */
+/* ─── Design Tokens (Warm SaaS Light Theme) ─────────────────────────────── */
 :root {
-  --bg-base:    #060b17;
-  --bg-surface: #0d1424;
-  --bg-card:    #111827;
-  --bg-card-2:  #1a2235;
-  --bg-hover:   #1e2a3d;
-  --border:     rgba(255, 255, 255, 0.09);
-  --border-hi:  rgba(255, 255, 255, 0.16);
-  --text-1:     #f1f5f9;
-  --text-2:     #94a3b8;
-  --text-3:     #4b5670;
-  --blue:       #3b82f6;
-  --blue-dim:   rgba(59, 130, 246, 0.15);
-  --blue-ring:  rgba(59, 130, 246, 0.35);
-  --violet:     #8b5cf6;
-  --cyan:       #06b6d4;
-  --green:      #22c55e;
-  --red:        #ef4444;
-  --amber:      #f59e0b;
-  --grad:       linear-gradient(135deg, #3b82f6 0%, #8b5cf6 60%, #06b6d4 100%);
-  --grad-card:  linear-gradient(145deg, rgba(59,130,246,0.07), rgba(139,92,246,0.04));
-  --shadow-md:  0 4px 20px rgba(0,0,0,0.5);
-  --shadow-lg:  0 8px 40px rgba(0,0,0,0.6);
-  --r:          12px;
+  color-scheme: light; /* Force light mode — overrides OS dark mode */
+
+  /* backgrounds */
+  --bg-base:    #FAFAF8;
+  --bg-surface: #F5F3EF;
+  --bg-card:    #FFFFFF;
+  --bg-card-2:  #F0EDE8;
+  --bg-hover:   #EDE9E3;
+
+  /* borders */
+  --border:     rgba(0, 0, 0, 0.08);
+  --border-hi:  rgba(0, 0, 0, 0.14);
+
+  /* text */
+  --text-1:     #1A1A1A;
+  --text-2:     #6B6560;
+  --text-3:     #A39E97;
+
+  /* accent palette — warm terracotta, no blue/green */
+  --accent:     #C17F59;
+  --accent-dim: rgba(193, 127, 89, 0.12);
+  --accent-2:   #8B7355;
+  --blue:       #C17F59;        /* remap "blue" → accent so existing usages stay warm */
+  --blue-dim:   rgba(193, 127, 89, 0.12);
+  --blue-ring:  rgba(193, 127, 89, 0.30);
+  --violet:     #8B7355;
+  --cyan:       #A0856A;
+  --green:      #16a34a;
+  --red:        #dc2626;
+  --amber:      #d97706;
+
+  /* gradients */
+  --grad:       linear-gradient(135deg, #C17F59 0%, #8B7355 100%);
+  --grad-card:  linear-gradient(145deg, rgba(193,127,89,0.05), rgba(139,115,85,0.03));
+
+  /* shadows — soft on light bg */
+  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.07);
+  --shadow-lg:  0 8px 40px rgba(0, 0, 0, 0.10);
+
+  --r: 12px;
 }
 
 /* ─── Reset / Base ──────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  background-color: #FAFAF8 !important;
+  color-scheme: light;
+}
 
 body {
-  background: var(--bg-base);
-  color: var(--text-1);
+  background: #FAFAF8 !important;
+  color: #1A1A1A !important;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   line-height: 1.6;
 }
 
+/* Kill any dark mode overrides from Tailwind or browser */
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background: #FAFAF8 !important;
+    color: #1A1A1A !important;
+  }
+}
+
 /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar          { width: 5px; height: 5px; }
-::-webkit-scrollbar-track    { background: var(--bg-base); }
+::-webkit-scrollbar-track    { background: var(--bg-surface); }
 ::-webkit-scrollbar-thumb    { background: var(--text-3); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
 
@@ -67,7 +96,7 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
 .spinner {
   width: 20px; height: 20px;
   border: 2.5px solid var(--border-hi);
-  border-top-color: var(--blue);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
@@ -116,6 +145,7 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 .card:hover {
@@ -126,7 +156,7 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
 
 /* ─── Glass ──────────────────────────────────────────────────────────────── */
 .glass {
-  background: rgba(13, 20, 36, 0.75);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--border);
@@ -143,12 +173,12 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
   text-decoration: none;
 }
 .btn-primary { background: var(--grad); color: #fff; }
-.btn-primary:hover { box-shadow: 0 6px 24px rgba(59,130,246,0.45); transform: translateY(-1px); }
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(193,127,89,0.35); transform: translateY(-1px); }
 .btn-primary:active { transform: translateY(0); box-shadow: none; }
 .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-ghost {
   background: transparent; color: var(--text-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-hi);
 }
 .btn-ghost:hover { background: var(--bg-hover); border-color: var(--border-hi); color: var(--text-1); }
 
@@ -158,18 +188,19 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
   width: 44px; height: 24px;
   border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
-.toggle-root.on  { background: var(--blue); }
-.toggle-root.off { background: #2a3347; border: 1px solid var(--border-hi); }
+.toggle-root.on  { background: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.toggle-root.off { background: #D4CFC9; box-shadow: inset 0 0 0 1px #C8C3BD; }
 .toggle-thumb {
   position: absolute;
   top: 3px; left: 3px;
   width: 18px; height: 18px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   transition: transform 0.2s ease;
 }
 .toggle-root.on .toggle-thumb { transform: translateX(20px); }
@@ -184,7 +215,7 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
   outline: none; transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input:focus {
-  border-color: var(--blue);
+  border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--blue-ring);
 }
 .input::placeholder { color: var(--text-3); }
@@ -194,17 +225,17 @@ button, [role="button"], a, label[for], select { cursor: pointer; }
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
 }
-.badge-blue   { background: var(--blue-dim);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
-.badge-green  { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
-.badge-violet { background: rgba(139,92,246,0.12); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); }
-.badge-amber  { background: rgba(245,158,11,0.12); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+.badge-blue   { background: var(--accent-dim); color: #8B4513; border: 1px solid rgba(193,127,89,0.3); }
+.badge-green  { background: rgba(22,163,74,0.1); color: #15803d; border: 1px solid rgba(22,163,74,0.3); }
+.badge-violet { background: rgba(139,115,85,0.12); color: #6B5234; border: 1px solid rgba(139,115,85,0.3); }
+.badge-amber  { background: rgba(217,119,6,0.10); color: #92400e; border: 1px solid rgba(217,119,6,0.25); }
 
 /* ─── Dividers ───────────────────────────────────────────────────────────── */
 .divider { height: 1px; background: var(--border); }
 
 /* ─── Recharts Tooltip ───────────────────────────────────────────────────── */
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: var(--bg-card-2) !important;
+  background: var(--bg-card) !important;
   border: 1px solid var(--border-hi) !important;
   border-radius: 8px !important;
   box-shadow: var(--shadow-md) !important;
